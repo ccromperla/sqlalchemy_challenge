@@ -70,7 +70,7 @@ def stations():
 
     session = Session(engine)
 
-    results = session.query(Station.station).all()
+    results = session.query(Station.station, Station.name).all()
 
     session.close()
 
@@ -95,6 +95,24 @@ def tobs():
     tobs_year = list(np.ravel(results))
     
     return jsonify(tobs_year)
+
+@app.route("/api/v1.0/<tstart>")
+def tstart():
+    print("Server received request for TMIN, TMAX, & TAVG")
+
+    session = Session(engine)
+
+    user_start = dt.datetime.strptime("%Y,%m,%d") 
+    tstart = dt.date("%Y,%m,%d") - dt.timedelta(days = 365)
+    results = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+    filter(Measurement.date >= tstart).all()
+
+    session.close()
+
+    t_values = list(np.ravel(results))
+
+    return jsonify(t_values)
+
  
 if __name__ == "__main__":
     app.run(debug=True)
