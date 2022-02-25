@@ -41,8 +41,8 @@ def home():
     f"/api/v1.0/precipitation<br/>"
     f"/api/v1.0/stations<br/>"
     f"/api/v1.0/tobs<br/>"
-    f"/api/v1.0/<start><br/>"
-    f"/api/v1.0/<start>/<end><br/>"
+    f"/api/v1.0/<tstart><br/>"
+    f"/api/v1.0/<tstart>/<tend><br/>"
     ) 
 
 @app.route("/api/v1.0/precipitation")
@@ -96,16 +96,21 @@ def tobs():
     
     return jsonify(tobs_year)
 
+# @app.route("/api/v1.0/<tstart>")
+# def tstart(tstart= None):
+# Just thought I'd keep the fact that you can set parameter to none, sorry Zayna not me
+# realizing what I was doing wrong after you helped get to a solution with what I had...
+
 @app.route("/api/v1.0/<tstart>")
-def tstart():
-    print("Server received request for TMIN, TMAX, & TAVG")
+def inputstart(tstart):
+    print("Server received Start Date request for TMIN, TMAX, & TAVG")
 
     session = Session(engine)
 
-    user_start = dt.datetime.strptime("%Y,%m,%d") 
-    tstart = dt.date("%Y,%m,%d") - dt.timedelta(days = 365)
+    user_start = dt.datetime.strptime(tstart,"%Y-%m-%d")
+    datediff = user_start - dt.timedelta(days=365)
     results = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
-    filter(Measurement.date >= tstart).all()
+    filter(Measurement.date >= datediff).all()
 
     session.close()
 
@@ -113,6 +118,24 @@ def tstart():
 
     return jsonify(t_values)
 
+@app.route("/api/v1.0/<tstart>/<tend>")
+def inputstartend(tstart, tend):
+    print("Server received Start and End Date request for TMIN, TMAX, & TAVG")
+
+    session = Session(engine)
+
+    user_start = dt.datetime.strptime(tstart,"%Y-%m-%d")
+    user_end = dt.datetime.strptime(tend,"%Y-%m-%d")
+
+    results = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+    filter(Measurement.date >= user_start).\
+    filter(Measurement.date <= user_end).all()
+    
+    session.close()
+
+    t_startend_values = list(np.ravel(results))
+
+    return jsonify(t_startend_values)
  
 if __name__ == "__main__":
     app.run(debug=True)
